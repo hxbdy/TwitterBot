@@ -170,7 +170,7 @@ class Bot:
         #    tableName=tableName.replace("\\n","\\\\\\\\n")
         tableName=tableName.replace("%","\%")
 
-        sql="show tables from test like '" + tableName + "';"
+        sql="show tables from "+setting.database+" like '" + tableName + "';"
         #print(sql)
         row=self.getSQL(sql)
         if not row:
