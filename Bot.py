@@ -75,14 +75,14 @@ class Bot:
             #suffix2=self.getRawString(array[i+2])
             if i==0:
                 if not self.isRecordExistFromStart(array[i],array[i+1],array[i+2]):
-                    sql="insert into start values('" + self.mysqlRealEscapeString(array[i]) + "','" + self.mysqlRealEscapeString(array[i+1]) + "','" + self.mysqlRealEscapeString(array[i+2]) + "');"
+                    sql="insert into start values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
                     #print(sql)
                     self.getSQL(sql)
             else:
                 if not self.isTableExist(array[i]):
                     self.createTable(array[i])
                 if not self.isRecordExist(array[i],array[i+1],array[i+2]):
-                    sql="insert into " + self.formatForTable(self.getInitial(array[i])) + " values('" + self.mysqlRealEscapeString(array[i]) + "','" + self.mysqlRealEscapeString(array[i+1]) + "','" + self.mysqlRealEscapeString(array[i+2]) + "');"
+                    sql="insert into " + self.formatForTable(self.getInitial(array[i])) + " values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
                     self.getSQL(sql)
     
     #stringの頭文字1文字目を取得する
@@ -182,7 +182,7 @@ class Bot:
     #指定レコードが存在するかを取得する
     #start,idテーブル以外から探す
     def isRecordExist(self,prefix,suffix1,suffix2):
-        sql="select * from "+self.formatForTable(self.getInitial(prefix))+" where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1='"+self.mysqlRealEscapeString(suffix1)+"' and suffix2='"+self.mysqlRealEscapeString(suffix2)+"';"
+        sql="select * from "+self.formatForTable(self.getInitial(prefix))+" where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1=convert('"+self.mysqlRealEscapeString(suffix1)+"' using binary) and suffix2=convert('"+self.mysqlRealEscapeString(suffix2)+"' using binary);"
         row=self.getSQL(sql)
         if not row:
             flg=False
@@ -193,7 +193,7 @@ class Bot:
     #指定レコードが存在するかを取得する
     #startテーブルから探す
     def isRecordExistFromStart(self,prefix,suffix1,suffix2):
-        sql="select * from start where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1='"+self.mysqlRealEscapeString(suffix1)+"' and suffix2='"+self.mysqlRealEscapeString(suffix2)+"';"
+        sql="select * from start where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1=convert('"+self.mysqlRealEscapeString(suffix1)+"' using binary) and suffix2=convert('"+self.mysqlRealEscapeString(suffix2)+"' using binary);"
         #print(sql)
         row=self.getSQL(sql)
         if not row:
@@ -476,7 +476,7 @@ class Bot:
             #リプ,RTは除く
             if(row[1]=="" and row[6]==""):
                 print(row[5])
-                sleep(0.5)
+                #sleep(0.5)
                 cnt+=1
                 if(offset<cnt):
                     self.addStringToDB(row[5])

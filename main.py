@@ -4,7 +4,9 @@ from time import sleep
 test=Bot.Bot()
 test.connectToDB()
 
-print(test.addFromCSV("tweets.csv"))
+#test.tweet("test")
+#test.getSQL("select * from `＼` where prefix=convert('＼' using binary) and suffix1=convert('%space%' using binary) and suffix2=convert('🍡＼' using binary);")
+print(test.addFromCSV("tweets.csv",100))
 #sleep(1)
 #print(ary)
 
