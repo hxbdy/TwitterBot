@@ -11,6 +11,7 @@ import setting
 import random
 import urllib.parse
 from time import sleep
+import unicodedata
 
 class Bot:
     def __init__(self):
@@ -79,11 +80,15 @@ class Bot:
                     #print(sql)
                     self.getSQL(sql)
             else:
-                if not self.isTableExist(array[i]):
-                    self.createTable(array[i])
-                if not self.isRecordExist(array[i],array[i+1],array[i+2]):
-                    sql="insert into " + self.formatForTable(self.getInitial(array[i])) + " values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
-                    self.getSQL(sql)
+                if self.isEmoji(array[i]):
+                    if not self.isRecordExistFromEmoji(array[i],array[i+1],array[i+2]):
+                        sql="insert into emoji values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
+                else:
+                    if not self.isTableExist(array[i]):
+                        self.createTable(array[i])
+                    if not self.isRecordExist(array[i],array[i+1],array[i+2]):
+                        sql="insert into " + self.formatForTable(self.getInitial(array[i])) + " values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
+                        self.getSQL(sql)
     
     #stringの頭文字1文字目を取得する
     #PHPのmysql_real_escape_string
@@ -180,7 +185,7 @@ class Bot:
         return flg
 
     #指定レコードが存在するかを取得する
-    #start,idテーブル以外から探す
+    #start,id,emojiテーブル以外から探す
     def isRecordExist(self,prefix,suffix1,suffix2):
         sql="select * from "+self.formatForTable(self.getInitial(prefix))+" where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1=convert('"+self.mysqlRealEscapeString(suffix1)+"' using binary) and suffix2=convert('"+self.mysqlRealEscapeString(suffix2)+"' using binary);"
         row=self.getSQL(sql)
@@ -206,6 +211,17 @@ class Bot:
     #idテーブルから探す
     def isRecordExistFromId(self,id):
         sql="select * from reply where id='" + str(id) + "';"
+        row=self.getSQL(sql)
+        if not row:
+            flg=False
+        else:
+            flg=True
+        return flg
+
+    #指定レコードが存在するかを取得する
+    #emojiテーブルから探す
+    def isRecordExistFromEmoji(self,prefix,suffix1,suffix2):
+        sql="select * from emoji where prefix=convert('" + self.mysqlRealEscapeString(prefix) + "' using binary) and suffix1=convert('"+self.mysqlRealEscapeString(suffix1)+"' using binary) and suffix2=convert('"+self.mysqlRealEscapeString(suffix2)+"' using binary);"
         row=self.getSQL(sql)
         if not row:
             flg=False
@@ -442,7 +458,8 @@ class Bot:
     ############################
     #csvを読みこんでDBに登録する
     #csvファイルはutf-8(BOM無し)
-    #何行目から登録するかのoffset変数も欲しい
+    #何行目から登録するかのoffset
+    #何行目まで登録するかのendsetが欲しい
     def addFromCSV(self,path,offset=0):
         tweet_id=[]
         in_reply_to_status_id=[]
@@ -480,6 +497,14 @@ class Bot:
                 cnt+=1
                 if(offset<cnt):
                     self.addStringToDB(row[5])
+
+    #stringの頭文字が絵文字かどうか
+    def isEmoji(self,string):
+        head=self.getInitial(string)
+        if(unicodedata.category(head)=='So'):
+            return True
+        else:
+            return False
 
     #～テーブル名を扱うためには～
     #ダブル、シングルクォートには\をつけない
