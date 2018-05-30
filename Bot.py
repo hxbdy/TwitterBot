@@ -65,6 +65,9 @@ class Bot:
         #    pass
 
         array=self.realEscapeStringEncode(array)
+        if len(array)==0:
+            print("ERROR:MorphAnalyzer is return NULL")
+            exit(-1)
         if len(array)==1:
             array.extend(["EOF","EOF"])
         elif len(array)>=2:
@@ -74,6 +77,7 @@ class Bot:
             #prefix =self.getRawString(array[i])
             #suffix1=self.getRawString(array[i+1])
             #suffix2=self.getRawString(array[i+2])
+            print("prefix="+array[i]+" suffix1="+array[i+1]+" suffix2="+array[i+2])
             if i==0:
                 if not self.isRecordExistFromStart(array[i],array[i+1],array[i+2]):
                     sql="insert into start values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
@@ -247,7 +251,7 @@ class Bot:
                 escape+=prepare[i]+" "
         string=escape[:-1]
         print(string)
-        requestURL = "http://jlp.yahooapis.jp/MAService/V1/parse"
+        requestURL = "https://jlp.yahooapis.jp/MAService/V1/parse"
         parameter = {'appid': setting.appId,
                 'sentence': string,
                 'results': 'ma'}
@@ -321,7 +325,7 @@ class Bot:
 
     #string中の名詞すべてを取得する
     def getAllNoun(self,string):
-        requestURL = "http://jlp.yahooapis.jp/MAService/V1/parse"
+        requestURL = "https://jlp.yahooapis.jp/MAService/V1/parse"
         parameter = {'appid': setting.appId,
                 'sentence': string,
                 'results': 'ma',
@@ -476,9 +480,9 @@ class Bot:
         f=csv.reader(csvFile)
         cnt=0
         #limit件のみ登録する
-        limit=500
+        limit=100
         for row in f:
-            if cnt>limit:
+            if limit<0:
                 return
             tweet_id.append(row[0])
             in_reply_to_status_id.append(row[1])
@@ -497,6 +501,7 @@ class Bot:
                 cnt+=1
                 if(offset<cnt):
                     self.addStringToDB(row[5])
+                    limit-=1
 
     #stringの頭文字が絵文字かどうか
     def isEmoji(self,string):
