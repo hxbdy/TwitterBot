@@ -373,13 +373,32 @@ class Bot:
             print ("Error: %d" % req.status_code)
         return array
 
+    #replyidとtextをディクショナリ形式でnumber件返す
+    def getReplyIdDic(self,number):
+        url = "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
+        params = {"count":number}
+        twitter = OAuth1Session(setting.consumerKey, setting.consumerSecret, setting.accessToken, setting.accesssTokenSecert)
+        req = twitter.get(url, params = params)
+        dic={}
+        if req.status_code == 200:
+            timeline = json.loads(req.text)
+            for tweet in timeline:
+                dic[tweet["id"]]=tweet["text"]
+        else:
+            print ("Error: %d" % req.status_code)
+        return dic
+
     #最新のnumber件のreplyidをDBに登録する
+    #登録したreplyidを返す
     def addReplyIdToDB(self,number):
-        array=self.getReplyId(10)
+        array=self.getReplyId(number)
+        unreply=[]
         for i in range(len(array)):
             if not self.isRecordExistFromId(array[i]):
                 sql="insert into reply values('" + str(array[i]) + "');"
                 self.getSQL(sql)
+                unreply.append(array[i])
+        return unreply
 
     #SQLインジェクション攻撃対策
     def antiSQLInjectionAttack(self,array):
@@ -517,6 +536,12 @@ class Bot:
             return True
         else:
             return False
+
+    #最新number件に対して返信する
+    def reply(self,number):
+        reply_ary=self.getReply(number)
+        reply_id_ary=self.addReplyIdToDB(number)
+        #未返信のReplyIdにのみ返信する
 
     #～テーブル名を扱うためには～
     #ダブル、シングルクォートには\をつけない
