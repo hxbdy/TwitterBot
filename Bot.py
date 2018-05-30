@@ -87,6 +87,7 @@ class Bot:
                 if self.isEmoji(array[i]):
                     if not self.isRecordExistFromEmoji(array[i],array[i+1],array[i+2]):
                         sql="insert into emoji values(convert('" + self.mysqlRealEscapeString(array[i]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+1]) + "' using binary),convert('" + self.mysqlRealEscapeString(array[i+2]) + "' using binary));"
+                        self.getSQL(sql)
                 else:
                     if not self.isTableExist(array[i]):
                         self.createTable(array[i])
@@ -149,7 +150,10 @@ class Bot:
     def stringGenHint(self,prefix,suffix1,suffix2):
         sentence=prefix+suffix1+suffix2
         while prefix!="EOF" and suffix1!="EOF" and suffix2!="EOF":
-            sql="select * from " + self.formatForTable(self.getInitial(suffix1)) + " where prefix=convert('" + self.mysqlRealEscapeString(suffix1) + "' using binary) and suffix1=convert('" + self.mysqlRealEscapeString(suffix2) + "' using binary) order by rand() limit 1;"
+            if self.isEmoji(suffix1):
+                sql="select * from emoji where prefix=convert('" + self.mysqlRealEscapeString(suffix1) + "' using binary) and suffix1=convert('" + self.mysqlRealEscapeString(suffix2) + "' using binary) order by rand() limit 1;"
+            else:
+                sql="select * from " + self.formatForTable(self.getInitial(suffix1)) + " where prefix=convert('" + self.mysqlRealEscapeString(suffix1) + "' using binary) and suffix1=convert('" + self.mysqlRealEscapeString(suffix2) + "' using binary) order by rand() limit 1;"
             row=self.getSQL(sql)
             #print(row)
             if len(row)==0:
@@ -235,6 +239,7 @@ class Bot:
 
     #stringを形態素解析してarrayで取得
     #URLは解析対象外
+    #返り値にURLを付加するかは考え中。今は除外する。
     def MorphAnalyze(self,string):
         flg=False
         escape=""
@@ -250,7 +255,7 @@ class Bot:
             if not self.isURL(prepare[i]):
                 escape+=prepare[i]+" "
         string=escape[:-1]
-        print(string)
+        #print(string)
         requestURL = "https://jlp.yahooapis.jp/MAService/V1/parse"
         parameter = {'appid': setting.appId,
                 'sentence': string,
@@ -260,9 +265,10 @@ class Bot:
         array=[]
         for e in elem.getiterator("{urn:yahoo:jp:jlp}surface"):
             array.append(e.text)
-        if flg:
-            for i in range(len(URLpos)):
-                array.append(prepare[URLpos[i]])
+        #以下のコメントアウトを外すとURLも含む
+        #if flg:
+        #    for i in range(len(URLpos)):
+        #        array.append(prepare[URLpos[i]])
         return array
 
     #replyを最新number件取得する
@@ -398,17 +404,18 @@ class Bot:
 
     #エスケープシーケンスを使用しない特殊文字の変換
     #strでもlistでもok
-    #絵文字もバイトコードとかで対応したい
     def realEscapeStringEncode(self,string):
         if type(string)==str:
             string=string.replace(" ","%space%")
             string=string.replace("　","%space%")
             string=string.replace("_","%underscore%")
+            string=string.replace("@","@.")
         elif type(string)==list:
             for i in range(len(string)):
                 string[i]=string[i].replace(" ","%space%")
                 string[i]=string[i].replace("　","%space%")
                 string[i]=string[i].replace("_","%underscore%")
+                string[i]=string[i].replace("@","@.")
         return string
 
     #エスケープシーケンスを使用しない特殊文字の復号
