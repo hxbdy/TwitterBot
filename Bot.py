@@ -12,6 +12,7 @@ import random
 import urllib.parse
 from time import sleep
 import unicodedata
+import re
 
 class Bot:
     def __init__(self):
@@ -258,8 +259,8 @@ class Bot:
         #print(string)
         requestURL = "https://jlp.yahooapis.jp/MAService/V1/parse"
         parameter = {'appid': setting.appId,
-                'sentence': string,
-                'results': 'ma'}
+                     'sentence': string,
+                     'results': 'ma'}
         r = requests.get(requestURL, params=parameter)
         elem = fromstring(r.text.encode('utf-8'))
         array=[]
@@ -400,6 +401,15 @@ class Bot:
                 unreply.append(array[i])
         return unreply
 
+    #idをreplyテーブルに登録する
+    #登録したらTrue,しなかったらFalseを返す
+    def addReplyId(self,id):
+        if not self.isRecordExistFromId(id):
+            sql="insert into reply values('" + str(id) + "');"
+            self.getSQL(sql)
+            return True
+        return False
+
     #SQLインジェクション攻撃対策
     def antiSQLInjectionAttack(self,array):
         sql="select * from a where suffix=convert('%s' using binary);"
@@ -538,10 +548,44 @@ class Bot:
             return False
 
     #最新number件に対して返信する
+    #TO DO:宛先のユーザIDを取得する
     def reply(self,number):
-        reply_ary=self.getReply(number)
-        reply_id_ary=self.addReplyIdToDB(number)
-        #未返信のReplyIdにのみ返信する
+        #data[id]=textの形式
+        data=self.getReplyIdDic(number)
+        print(data)
+        id_arr=data.keys()
+        for i in id_arr:
+            if self.addReplyId(i):
+                user_name,text=self.deleteUserName(data[i])
+                n=self.getRandomNoun(text)
+                if self.isTableExist(n):
+                    text=self.stringGen(n)
+                else:
+                    text="It is an unlearned hint"
+                self.replyToId(i,text)
+
+    #ユーザ名とツイートを分離
+    #戻り値はusername,text
+    def deleteUserName(self,text):
+        regex = r'\S+'
+        matchObj = re.match(regex, text)
+        start,end=matchObj.span()
+        return text[:end],text[end+1:]
+        
+    #未返信のReplyIdにのみ返信する
+
+    #id宛にtextを返信する
+    def replyToId(self,id,text):
+        url = "https://api.twitter.com/1.1/statuses/update.json"
+        params = {"status": text,
+                  "in_reply_to_status_id":id}
+        twitter = OAuth1Session(setting.consumerKey, setting.consumerSecret, setting.accessToken, setting.accesssTokenSecert)
+        req = twitter.post(url, params = params)
+        if req.status_code == 200:
+            print ("OK")
+        else:
+            print ("Error: %d" % req.status_code)
+        #in_reply_to_status_id
 
     #～テーブル名を扱うためには～
     #ダブル、シングルクォートには\をつけない
