@@ -67,9 +67,9 @@ class Bot:
 
         array=self.realEscapeStringEncode(array)
         if len(array)==0:
-            print("ERROR:MorphAnalyzer is return NULL")
+            print("ERROR:MorphAnalyzer return NULL")
             exit(-1)
-        if len(array)==1:
+        elif len(array)==1:
             array.extend(["EOF","EOF"])
         elif len(array)>=2:
             array.append("EOF")
@@ -176,9 +176,12 @@ class Bot:
         self.cur.execute("create table "+tableName+" (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));")
         self.conn.commit()
 
-    #stringの頭文字のテーブルが既に存在するかを取得する
-    def isTableExist(self,string):
-        tableName=self.getInitial(string)
+    #stringのテーブルが既に存在するかを取得する
+    #initialをTrueでstringの頭文字のテーブルが存在するか調べる
+    #Falseでstringのテーブルが存在するか調べる
+    def isTableExist(self,string,initial=True):
+        if initial:
+            tableName=self.getInitial(string)
         tableName=self.mysqlRealEscapeString(tableName)
         #if tableName=="\\n":
         #    tableName=tableName.replace("\\n","\\\\\\\\n")
@@ -388,6 +391,7 @@ class Bot:
                 #print(tweet)
                 #tweetから返信者のscreen nameはわかるのでgetScreenNameは不要?
                 if not self.isRecordExistFromId(tweet["id"]):
+                    self.addReplyId(tweet["id"])
                     screen_name=self.getScreenName(tweet["id"])
                     dic[screen_name]=tweet["text"]
         else:
@@ -500,7 +504,6 @@ class Bot:
         else:
             return True
 
-    ############################
     #csvを読みこんでDBに登録する
     #csvファイルはutf-8(BOM無し)
     #何行目から登録するかのoffset
@@ -516,6 +519,17 @@ class Bot:
         retweeted_status_user_id=[]
         retweeted_status_timestamp=[]
         expanded_urls=[]
+        
+        #emoji,reply,startテーブルがない場合は作る
+        if not self.isTableExist("emoji",False):
+            sql="create table emoji (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
+            self.getSQL(sql)
+        if not self.isTableExist("reply",False):
+            sql="create table reply (id CHAR(50));"
+            self.getSQL(sql)
+        if not self.isTableExist("start",False):
+            sql="create table start (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
+            self.getSQL(sql)
 
         csvFile=open(path,"r")
         f=csv.reader(csvFile)
