@@ -40,7 +40,8 @@ class Bot:
 
     #prefixから文字列を生成する
     def stringGen(self,prefix):
-        prefix=self.getRawString(prefix)
+        #prefix=self.getRawString(prefix)
+        prefix=self.realEscapeStringEncode(prefix)
         sql="select * from " + self.formatForTable(self.getInitial(prefix)) + " where prefix=convert('" + prefix + "' using binary) order by rand() limit 1;"
         row=self.getSQL(sql)
         #prefix=row[0]
@@ -150,6 +151,9 @@ class Bot:
     #テスト可能
     def stringGenHint(self,prefix,suffix1,suffix2):
         sentence=prefix+suffix1+suffix2
+        #prefix=self.realEscapeStringEncode(prefix)
+        #suffix1=self.realEscapeStringEncode(suffix1)
+        #suffix2=self.realEscapeStringEncode(suffix2)
         while prefix!="EOF" and suffix1!="EOF" and suffix2!="EOF":
             if self.isEmoji(suffix1):
                 sql="select * from emoji where prefix=convert('" + self.mysqlRealEscapeString(suffix1) + "' using binary) and suffix1=convert('" + self.mysqlRealEscapeString(suffix2) + "' using binary) order by rand() limit 1;"
@@ -182,6 +186,8 @@ class Bot:
     def isTableExist(self,string,initial=True):
         if initial:
             tableName=self.getInitial(string)
+        else:
+            tableName=string
         tableName=self.mysqlRealEscapeString(tableName)
         #if tableName=="\\n":
         #    tableName=tableName.replace("\\n","\\\\\\\\n")
@@ -469,8 +475,7 @@ class Bot:
         return string
 
     #エスケープシーケンス無効の文字列を返す
-    #上のメソッドみたいに地道にやる?
-    #!!!致命的なバグあり!!!
+    #使用非推奨メソッド
     def getRawString(self,string):
         print("before="+string)
         string=repr(string)
@@ -606,6 +611,7 @@ class Bot:
     #未返信のReplyIdにのみ返信する
 
     #id宛にtextを返信する
+    #textの先頭には@screen_nameが付加されている必要がある
     def replyToId(self,id,text):
         url = "https://api.twitter.com/1.1/statuses/update.json"
         params = {"status": text,
