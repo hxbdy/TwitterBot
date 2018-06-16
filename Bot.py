@@ -374,7 +374,7 @@ class Bot:
             print ("Error: %d" % req.status_code)
         return array
 
-    #replyidとtextをディクショナリ形式でnumber件返す
+    #未返信のリプライに対して宛先screen_nameとtextをディクショナリ形式でnumber件返す
     def getReplyIdDic(self,number):
         url = "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
         params = {"count":number}
@@ -383,8 +383,13 @@ class Bot:
         dic={}
         if req.status_code == 200:
             timeline = json.loads(req.text)
+            #print(timeline)
             for tweet in timeline:
-                dic[tweet["id"]]=tweet["text"]
+                #print(tweet)
+                #tweetから返信者のscreen nameはわかるのでgetScreenNameは不要?
+                if not self.isRecordExistFromId(tweet["id"]):
+                    screen_name=self.getScreenName(tweet["id"])
+                    dic[screen_name]=tweet["text"]
         else:
             print ("Error: %d" % req.status_code)
         return dic
@@ -571,6 +576,18 @@ class Bot:
         matchObj = re.match(regex, text)
         start,end=matchObj.span()
         return text[:end],text[end+1:]
+
+    #Tweetidからscreen nameを取得する
+    def getScreenName(self,id):
+        url = "https://api.twitter.com/1.1/statuses/show.json"
+        params = {"id":id}
+        twitter = OAuth1Session(setting.consumerKey, setting.consumerSecret, setting.accessToken, setting.accesssTokenSecert)
+        req = twitter.get(url, params = params)
+        if req.status_code == 200:
+            timeline = json.loads(req.text)
+            return '@'+timeline["user"]["screen_name"]
+        else:
+            print("Error: %d" % req.status_code)
         
     #未返信のReplyIdにのみ返信する
 
