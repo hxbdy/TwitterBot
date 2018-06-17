@@ -53,7 +53,8 @@ class Bot:
     #DBにstringを登録する
     def addStringToDB(self,string):
         array=self.MorphAnalyze(string)
-        self.addArrayToDB(array)
+        if len(array)!=0:
+            self.addArrayToDB(array)
 
     #DBにarrayを登録する
     #最初の3節のみstartテーブルに登録する
@@ -540,10 +541,10 @@ class Bot:
         f=csv.reader(csvFile)
         cnt=0
         #limit件のみ登録する
-        limit=100
+        #limit=100
         for row in f:
-            if limit<0:
-                return
+            #if limit<0:
+            #    return
             tweet_id.append(row[0])
             in_reply_to_status_id.append(row[1])
             in_reply_to_user_id.append(row[2])
@@ -561,12 +562,13 @@ class Bot:
                 cnt+=1
                 if(offset<cnt):
                     self.addStringToDB(row[5])
-                    limit-=1
+                    #limit-=1
 
     #stringの頭文字が絵文字かどうか
     def isEmoji(self,string):
         head=self.getInitial(string)
-        if(unicodedata.category(head)=='So'):
+        print(unicodedata.category(head))
+        if(unicodedata.category(head)=='So' or unicodedata.category(head)=='Cn'):
             return True
         else:
             return False
