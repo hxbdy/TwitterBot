@@ -7,8 +7,12 @@ test.connectToDB()
 
 #test.tweet("test")
 #test.getSQL("select * from `＼` where prefix=convert('＼' using binary) and suffix1=convert('%space%' using binary) and suffix2=convert('🍡＼' using binary);")
-print(test.addFromCSV("tweets.csv"))
+#print(test.addFromCSV("tweets.csv"))
 #print(test.isEmoji('🤔'))
+
+t=test.stringGenRandom()
+test.tweet(t)
+
 #for i in range(10):
 #    print(test.stringGenRandom())
 #    sleep(3)
