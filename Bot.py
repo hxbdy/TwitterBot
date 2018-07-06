@@ -505,6 +505,10 @@ class Bot:
     #有効かどうかは判断しない
     def isURL(self,url):
         result=urllib.parse.urlparse(url)
+        #if len(result.scheme) > 0:
+        #    return True
+        #else:
+        #    return False
         if result.scheme=='':
             return False
         else:
@@ -525,17 +529,8 @@ class Bot:
         retweeted_status_user_id=[]
         retweeted_status_timestamp=[]
         expanded_urls=[]
-        
-        #emoji,reply,startテーブルがない場合は作る
-        if not self.isTableExist("emoji",False):
-            sql="create table emoji (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
-            self.getSQL(sql)
-        if not self.isTableExist("reply",False):
-            sql="create table reply (id CHAR(50));"
-            self.getSQL(sql)
-        if not self.isTableExist("start",False):
-            sql="create table start (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
-            self.getSQL(sql)
+
+        self.initializeDB()
 
         csvFile=open(path,"r")
         f=csv.reader(csvFile)
@@ -625,6 +620,32 @@ class Bot:
         else:
             print ("Error: %d" % req.status_code)
         #in_reply_to_status_id
+
+    #emoji,reply,startテーブルがない場合は作る
+    def initializeDB(self):
+        if not self.isTableExist("emoji",False):
+            sql="create table emoji (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
+            self.getSQL(sql)
+        if not self.isTableExist("reply",False):
+            sql="create table reply (id CHAR(50));"
+            self.getSQL(sql)
+        if not self.isTableExist("start",False):
+            sql="create table start (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
+            self.getSQL(sql)
+
+    #@～が存在するか調べる
+    def isMention(self,string):
+        if re.search(r'@\w+',string)!=None:
+            return True
+        else:
+            return False
+
+    #TLからnum件取得して学習する
+    def lerningFromTL(self,num):
+        arr=self.getTL(num)
+        for i in range(len(arr)):
+            if not self.isMention(arr[i]):
+                self.addStringToDB(arr[i])
 
     #～テーブル名を扱うためには～
     #ダブル、シングルクォートには\をつけない
