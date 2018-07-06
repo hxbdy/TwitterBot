@@ -501,18 +501,22 @@ class Bot:
         tableName="`"+tableName+"`"
         return tableName
 
-    #URLかどうか
+    #URLがstring中に含まれているか
     #有効かどうかは判断しない
-    def isURL(self,url):
-        result=urllib.parse.urlparse(url)
+    def isURL(self,string):
+        #result=urllib.parse.urlparse(url)
+        if string.find("http")>-1:
+            return True
+        else:
+            return False
         #if len(result.scheme) > 0:
         #    return True
         #else:
         #    return False
-        if result.scheme=='':
-            return False
-        else:
-            return True
+        #if result.scheme=='':
+        #    return False
+        #else:
+        #    return True
 
     #csvを読みこんでDBに登録する
     #csvファイルはutf-8(BOM無し)
