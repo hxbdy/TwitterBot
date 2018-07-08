@@ -13,23 +13,24 @@ import urllib.parse
 from time import sleep
 import unicodedata
 import re
+from datetime import datetime
 
 class Bot:
     def __init__(self):
         pass
 
-    #DBに接続
     def connectToDB(self):
+        """DBに接続"""
         self.conn=mysql.connector.connect(user=setting.user,password=setting.password,host=setting.host,database=setting.database,buffered=True)
         self.cur = self.conn.cursor()
     
-    #DBから切断
     def disConnectToDB(self):
+        """DBから切断"""     
         self.cur.close
         self.conn.close
-    
-    #ランダムに文字列を生成する
+
     def stringGenRandom(self):
+        """ランダムに文字列を生成する"""
         sql="select * from start order by rand() limit 1;"
         row=self.getSQL(sql)
         prefix=row[0]
@@ -38,8 +39,8 @@ class Bot:
         sentence=self.stringGenHint(prefix,suffix1,suffix2)
         return sentence
 
-    #prefixから文字列を生成する
     def stringGen(self,prefix):
+        """prefixから文字列を生成する"""
         #prefix=self.getRawString(prefix)
         prefix=self.realEscapeStringEncode(prefix)
         sql="select * from " + self.formatForTable(self.getInitial(prefix)) + " where prefix=convert('" + prefix + "' using binary) order by rand() limit 1;"
@@ -50,17 +51,19 @@ class Bot:
         sentence=self.stringGenHint(prefix,suffix1,suffix2)
         return sentence
 
-    #DBにstringを登録する
     def addStringToDB(self,string):
+        """DBにstringを登録する"""
         array=self.MorphAnalyze(string)
         if len(array)!=0:
             self.addArrayToDB(array)
 
-    #DBにarrayを登録する
-    #最初の3節のみstartテーブルに登録する
+    
     #!!!下層メソッドに致命的なバグあり!!!
     def addArrayToDB(self,array):
-        
+        """
+        DBにarrayを登録する\n
+        最初の3節のみstartテーブルに登録する
+        """
         #try:
         #    array.remove(' ')
         #    array.remove('　')
@@ -136,8 +139,8 @@ class Bot:
 
         return first
 
-    #sqlを実行して結果を取得する
     def getSQL(self,sql):
+        """sqlを実行して結果を取得する"""
         print(sql)
         self.cur.execute(sql)
         if sql.find("select")>-1 or sql.find("show")>-1:
@@ -304,6 +307,7 @@ class Bot:
         twitter = OAuth1Session(setting.consumerKey, setting.consumerSecret, setting.accessToken, setting.accesssTokenSecert)
         req = twitter.post(url, params = params)
         if req.status_code == 200:
+            self.logging(string)
             print ("OK")
         else:
             print ("Error: %d" % req.status_code)
@@ -501,9 +505,9 @@ class Bot:
         tableName="`"+tableName+"`"
         return tableName
 
-    #URLがstring中に含まれているか
-    #有効かどうかは判断しない
     def isURL(self,string):
+        """URLがstring中に含まれているか\n
+        有効かどうかは判断しない"""
         #result=urllib.parse.urlparse(url)
         if string.find("http")>-1:
             return True
@@ -518,11 +522,11 @@ class Bot:
         #else:
         #    return True
 
-    #csvを読みこんでDBに登録する
-    #csvファイルはutf-8(BOM無し)
-    #何行目から登録するかのoffset
     #何行目まで登録するかのendsetが欲しい
     def addFromCSV(self,path,offset=0):
+        """csvを読みこんでDBに登録する\n
+        csvファイルはutf-8(BOM無し)\n
+        何行目から登録するかのoffset"""
         tweet_id=[]
         in_reply_to_status_id=[]
         in_reply_to_user_id=[]
@@ -563,8 +567,8 @@ class Bot:
                     self.addStringToDB(row[5])
                     #limit-=1
 
-    #stringの頭文字が絵文字かどうか
     def isEmoji(self,string):
+        """stringの頭文字が絵文字かどうか"""
         head=self.getInitial(string)
         print(unicodedata.category(head))
         if(unicodedata.category(head)=='So' or unicodedata.category(head)=='Cn'):
@@ -572,9 +576,9 @@ class Bot:
         else:
             return False
 
-    #最新number件に対して返信する
     #TO DO:宛先のユーザIDを取得する
     def reply(self,number):
+        """最新number件に対して返信する"""
         #data[id]=textの形式
         data=self.getReplyIdDic(number)
         print(data)
@@ -589,16 +593,16 @@ class Bot:
                     text="It is an unlearned hint"
                 self.replyToId(i,text)
 
-    #ユーザ名とツイートを分離
-    #戻り値はusername,text
     def deleteUserName(self,text):
+        """ユーザ名とツイートを分離\n
+        戻り値はusername,text"""
         regex = r'\S+'
         matchObj = re.match(regex, text)
         start,end=matchObj.span()
         return text[:end],text[end+1:]
 
-    #Tweetidからscreen nameを取得する
     def getScreenName(self,id):
+        """Tweetidからscreen nameを取得する"""
         url = "https://api.twitter.com/1.1/statuses/show.json"
         params = {"id":id}
         twitter = OAuth1Session(setting.consumerKey, setting.consumerSecret, setting.accessToken, setting.accesssTokenSecert)
@@ -608,12 +612,10 @@ class Bot:
             return '@'+timeline["user"]["screen_name"]
         else:
             print("Error: %d" % req.status_code)
-        
-    #未返信のReplyIdにのみ返信する
 
-    #id宛にtextを返信する
-    #textの先頭には@screen_nameが付加されている必要がある
     def replyToId(self,id,text):
+        """id宛にtextを返信する\n
+        textの先頭には@screen_nameが付加されている必要がある"""
         url = "https://api.twitter.com/1.1/statuses/update.json"
         params = {"status": text,
                   "in_reply_to_status_id":id}
@@ -623,10 +625,9 @@ class Bot:
             print ("OK")
         else:
             print ("Error: %d" % req.status_code)
-        #in_reply_to_status_id
 
-    #emoji,reply,startテーブルがない場合は作る
     def initializeDB(self):
+        """emoji,reply,startテーブルがない場合は作る"""
         if not self.isTableExist("emoji",False):
             sql="create table emoji (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
             self.getSQL(sql)
@@ -637,33 +638,22 @@ class Bot:
             sql="create table start (prefix CHAR(50),suffix1 CHAR(50),suffix2 CHAR(50));"
             self.getSQL(sql)
 
-    #@～が存在するか調べる
     def isMention(self,string):
+        """@\w+が存在するか調べる"""
         if re.search(r'@\w+',string)!=None:
             return True
         else:
             return False
 
-    #TLからnum件取得して学習する
     def lerningFromTL(self,num):
+        """TLからnum件取得して学習する"""
         arr=self.getTL(num)
         for i in range(len(arr)):
             if not self.isMention(arr[i]):
                 self.addStringToDB(arr[i])
 
-    #～テーブル名を扱うためには～
-    #ダブル、シングルクォートには\をつけない
-    #ただし、\には付ける
-    #スペース系は使えないから消すかなんかする
-
-    #debug用
-    def debug(self):
-        sql=r"show tables from test like '\\\\n';"
-        self.cur.execute(sql)
-        row=self.cur.fetchall()
-        print(row)
-        #動作確認済み
-        #sql=r"select * from `'` where suffix='\'' and prefix1='こう' and prefix2='いう';"
-        #sql=r"select * from `\` where suffix='\\' and prefix1='\'' and prefix2='こう';"
-        #sql=r"select * from `\` where suffix='\\';"
-        #self.getSQL(sql)
+    def logging(self,string):
+        """stringを現在時刻とともにロギングする"""
+        #print(datetime.now().strftime("%Y/%m/%d %H:%M:%S")+" "+string)
+        with open("himazindanaBotLog.txt", mode='a') as f:
+            f.write('\n'+datetime.now().strftime("%Y/%m/%d %H:%M:%S")+" "+string)
