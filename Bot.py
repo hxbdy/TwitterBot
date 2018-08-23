@@ -388,7 +388,7 @@ class Bot:
             print ("Error: %d" % req.status_code)
         return array
 
-    #未返信のリプライに対して宛先screen_nameとtextをディクショナリ形式でnumber件返す
+    #未返信のリプライに対して宛先tweet_idとtextをディクショナリ形式でnumber件返す
     def getReplyIdDic(self,number):
         url = "https://api.twitter.com/1.1/statuses/mentions_timeline.json"
         params = {"count":number}
@@ -400,11 +400,10 @@ class Bot:
             #print(timeline)
             for tweet in timeline:
                 #print(tweet)
-                #tweetから返信者のscreen nameはわかるのでgetScreenNameは不要?
                 if not self.isRecordExistFromId(tweet["id"]):
                     self.addReplyId(tweet["id"])
-                    screen_name=self.getScreenName(tweet["id"])
-                    dic[screen_name]=tweet["text"]
+                    #screen_name=self.getScreenName(tweet["id"])
+                    dic[tweet["id"]]=tweet["text"]
         else:
             print ("Error: %d" % req.status_code)
         return dic
@@ -576,7 +575,6 @@ class Bot:
         else:
             return False
 
-    #TO DO:宛先のユーザIDを取得する
     def reply(self,number):
         """最新number件に対して返信する"""
         #data[id]=textの形式
@@ -584,22 +582,25 @@ class Bot:
         print(data)
         id_arr=data.keys()
         for i in id_arr:
-            if self.addReplyId(i):
-                user_name,text=self.deleteUserName(data[i])
-                n=self.getRandomNoun(text)
-                if self.isTableExist(n):
-                    text=self.stringGen(n)
-                else:
-                    text="It is an unlearned hint"
-                self.replyToId(i,text)
+            text=self.deleteUserName(data[i])
+            n=self.getRandomNoun(text)
+            if self.isTableExist(n):
+                text=self.stringGen(n)
+            else:
+                text="It is an unlearned hint"
+            text=self.getScreenName(i)+" "+text
+            self.replyToId(i,text)
 
     def deleteUserName(self,text):
-        """ユーザ名とツイートを分離\n
-        戻り値はusername,text"""
-        regex = r'\S+'
-        matchObj = re.match(regex, text)
-        start,end=matchObj.span()
-        return text[:end],text[end+1:]
+        """ユーザ名とツイートを分離し、ツイート部分のみ返す
+        """
+        regex = r'@\S+'
+        iterator = re.finditer(regex ,text)
+        for match in iterator:
+            text=text.replace(match.group(),"")
+        matchObj = re.search(r'\s+', text)
+        text=text[matchObj.end():]
+        return text
 
     def getScreenName(self,id):
         """Tweetidからscreen nameを取得する"""
